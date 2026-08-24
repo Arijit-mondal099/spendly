@@ -1,6 +1,17 @@
-from flask import Flask, render_template
+import re
+import sqlite3
 
-from db.db import close_db, get_db, init_db, seed_db
+from flask import Flask, redirect, render_template, request, url_for
+from werkzeug.security import generate_password_hash
+
+from db.db import (
+    close_db,
+    create_user,
+    get_db,
+    get_user_by_email,
+    init_db,
+    seed_db,
+)
 
 app = Flask(__name__)
 
@@ -16,6 +27,16 @@ with app.app_context():
 
 
 # ------------------------------------------------------------------ #
+# Constants                                                           #
+# ------------------------------------------------------------------ #
+
+MIN_PASSWORD_LENGTH = 8
+# Pragmatic email check: something@something.tld, no whitespace, single '@'.
+EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
+DUPLICATE_EMAIL_ERROR = "This email is already registered. Try signing in instead."
+
+
+# ------------------------------------------------------------------ #
 # Routes                                                              #
 # ------------------------------------------------------------------ #
 
@@ -24,9 +45,36 @@ def landing():
     return render_template("landing.html")
 
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
-    return render_template("register.html")
+    """Show the signup form (GET) or create an account (POST)."""
+    if request.method == "GET":
+        return render_template("register.html", error=None, name="", email="")
+
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
+
+    error = None
+    if not name:
+        error = "Please enter your full name."
+    elif not EMAIL_PATTERN.fullmatch(email):
+        error = "Please enter a valid email address."
+    elif len(password) < MIN_PASSWORD_LENGTH:
+        error = "Password must be at least 8 characters."
+    elif get_user_by_email(email) is not None:
+        error = DUPLICATE_EMAIL_ERROR
+
+    if error is None:
+        try:
+            create_user(name, email, generate_password_hash(password))
+        except sqlite3.IntegrityError:
+            error = DUPLICATE_EMAIL_ERROR
+
+    if error is not None:
+        return render_template("register.html", error=error, name=name, email=email)
+
+    return redirect(url_for("login"))
 
 
 @app.route("/login")

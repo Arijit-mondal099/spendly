@@ -1,4 +1,5 @@
-"""SQLite helpers for Spendly: get_db(), close_db(), init_db(), seed_db()."""
+"""SQLite helpers for Spendly: get_db(), close_db(), init_db(), seed_db(),
+get_user_by_email(), create_user()."""
 
 import sqlite3
 from datetime import date, timedelta
@@ -100,3 +101,23 @@ def seed_db():
         rows,
     )
     db.commit()
+
+
+def get_user_by_email(email):
+    """Return the user row with this email address, or None."""
+    db = get_db()
+    return db.execute(
+        "SELECT * FROM users WHERE email = ?",
+        (email,),
+    ).fetchone()
+
+
+def create_user(name, email, password_hash):
+    """Insert a new user and return the new row's id."""
+    db = get_db()
+    cursor = db.execute(
+        "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+        (name, email, password_hash),
+    )
+    db.commit()
+    return cursor.lastrowid
