@@ -1,8 +1,9 @@
 import re
+import secrets
 import sqlite3
 
-from flask import Flask, redirect, render_template, request, url_for
-from werkzeug.security import generate_password_hash
+from flask import Flask, redirect, render_template, request, session, url_for
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from db.db import (
     close_db,
@@ -14,6 +15,10 @@ from db.db import (
 )
 
 app = Flask(__name__)
+
+# Random per-process key: sessions are properly signed, but every server
+# restart signs everyone out. Fine for development at this stage.
+app.secret_key = secrets.token_hex()
 
 # ------------------------------------------------------------------ #
 # Database setup                                                      #
@@ -34,6 +39,7 @@ MIN_PASSWORD_LENGTH = 8
 # Pragmatic email check: something@something.tld, no whitespace, single '@'.
 EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 DUPLICATE_EMAIL_ERROR = "This email is already registered. Try signing in instead."
+LOGIN_ERROR = "Invalid email or password."
 
 
 # ------------------------------------------------------------------ #
@@ -47,7 +53,10 @@ def landing():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    """Show the signup form (GET) or create an account (POST)."""
+    """Bounce signed-in users; otherwise show the signup form or create an account."""
+    if "user_id" in session:
+        return redirect(url_for("landing"))
+
     if request.method == "GET":
         return render_template("register.html", error=None, name="", email="")
 
@@ -77,9 +86,36 @@ def register():
     return redirect(url_for("login"))
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    return render_template("login.html")
+    """Bounce signed-in users; otherwise show the sign-in form or authenticate."""
+    if "user_id" in session:
+        return redirect(url_for("landing"))
+
+    if request.method == "GET":
+        return render_template("login.html", error=None, email="")
+
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
+
+    user = get_user_by_email(email)
+    error = None
+    if user is None or not check_password_hash(user["password_hash"], password):
+        error = LOGIN_ERROR
+
+    if error is not None:
+        return render_template("login.html", error=error, email=email)
+
+    session.clear()
+    session["user_id"] = user["id"]
+    return redirect(url_for("landing"))
+
+
+@app.route("/logout")
+def logout():
+    """Clear the session and return to the sign-in page."""
+    session.clear()
+    return redirect(url_for("login"))
 
 
 @app.route("/terms")
@@ -95,11 +131,6 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/logout")
-def logout():
-    return "Logout — coming in Step 3"
-
 
 @app.route("/profile")
 def profile():
