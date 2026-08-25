@@ -43,6 +43,46 @@ LOGIN_ERROR = "Invalid email or password."
 
 
 # ------------------------------------------------------------------ #
+# Profile demo data — static until Step 5 wires up real queries       #
+# ------------------------------------------------------------------ #
+
+PROFILE_USER = {
+    "name": "Demo User",
+    "email": "demo@spendly.com",
+    "member_since": "March 2025",
+}
+
+PROFILE_STATS = [
+    {"label": "Total spent", "value": "₹3,145.44", "note": "across 6 categories"},
+    {"label": "Transactions", "value": "18", "note": "last 30 days"},
+    {"label": "Top category", "value": "Food", "note": "₹1,186.20 spent"},
+]
+
+PROFILE_TRANSACTIONS = [
+    {"date": "Aug 24, 2026", "description": "Weekly groceries",
+     "category": "Food", "amount": "₹842.30"},
+    {"date": "Aug 22, 2026", "description": "Electricity bill",
+     "category": "Bills", "amount": "₹96.40"},
+    {"date": "Aug 20, 2026", "description": "Bus pass top-up",
+     "category": "Transport", "amount": "₹32.00"},
+    {"date": "Aug 18, 2026", "description": "Pharmacy - cold medicine",
+     "category": "Health", "amount": "₹23.10"},
+    {"date": "Aug 16, 2026", "description": "Movie tickets",
+     "category": "Entertainment", "amount": "₹15.00"},
+]
+
+# Rounded shares of total spending; may not sum to exactly 100.
+PROFILE_CATEGORIES = [
+    {"name": "Food", "total": "₹1,186.20", "percent": 38},
+    {"name": "Bills", "total": "₹742.00", "percent": 24},
+    {"name": "Transport", "total": "₹486.50", "percent": 16},
+    {"name": "Shopping", "total": "₹336.44", "percent": 11},
+    {"name": "Health", "total": "₹214.30", "percent": 7},
+    {"name": "Entertainment", "total": "₹180.00", "percent": 6},
+]
+
+
+# ------------------------------------------------------------------ #
 # Routes                                                              #
 # ------------------------------------------------------------------ #
 
@@ -90,7 +130,7 @@ def register():
 def login():
     """Bounce signed-in users; otherwise show the sign-in form or authenticate."""
     if "user_id" in session:
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
 
     if request.method == "GET":
         return render_template("login.html", error=None, email="")
@@ -108,7 +148,8 @@ def login():
 
     session.clear()
     session["user_id"] = user["id"]
-    return redirect(url_for("landing"))
+    session["user_name"] = user["name"]
+    return redirect(url_for("profile"))
 
 
 @app.route("/logout")
@@ -128,14 +169,27 @@ def privacy():
     return render_template("privacy.html")
 
 
+@app.route("/profile")
+def profile():
+    """Show the profile page with static demo data until Step 5."""
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    parts = PROFILE_USER["name"].split()
+    user = {**PROFILE_USER, "initials": "".join(p[0] for p in parts[:2]).upper()}
+
+    return render_template(
+        "profile.html",
+        user=user,
+        stats=PROFILE_STATS,
+        transactions=PROFILE_TRANSACTIONS,
+        categories=PROFILE_CATEGORIES,
+    )
+
+
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/profile")
-def profile():
-    return "Profile page — coming in Step 4"
-
 
 @app.route("/expenses/add")
 def add_expense():
