@@ -1,6 +1,7 @@
 import re
 import secrets
 import sqlite3
+from datetime import datetime
 
 from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -12,6 +13,12 @@ from db.db import (
     get_user_by_email,
     init_db,
     seed_db,
+)
+from db.queries import (
+    get_category_breakdown,
+    get_recent_transactions,
+    get_summary_stats,
+    get_user_by_id,
 )
 
 app = Flask(__name__)
@@ -40,46 +47,6 @@ MIN_PASSWORD_LENGTH = 8
 EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 DUPLICATE_EMAIL_ERROR = "This email is already registered. Try signing in instead."
 LOGIN_ERROR = "Invalid email or password."
-
-
-# ------------------------------------------------------------------ #
-# Profile demo data — static until Step 5 wires up real queries       #
-# ------------------------------------------------------------------ #
-
-PROFILE_USER = {
-    "name": "Demo User",
-    "email": "demo@spendly.com",
-    "member_since": "March 2025",
-}
-
-PROFILE_STATS = [
-    {"label": "Total spent", "value": "₹3,145.44", "note": "across 6 categories"},
-    {"label": "Transactions", "value": "18", "note": "last 30 days"},
-    {"label": "Top category", "value": "Food", "note": "₹1,186.20 spent"},
-]
-
-PROFILE_TRANSACTIONS = [
-    {"date": "Aug 24, 2026", "description": "Weekly groceries",
-     "category": "Food", "amount": "₹842.30"},
-    {"date": "Aug 22, 2026", "description": "Electricity bill",
-     "category": "Bills", "amount": "₹96.40"},
-    {"date": "Aug 20, 2026", "description": "Bus pass top-up",
-     "category": "Transport", "amount": "₹32.00"},
-    {"date": "Aug 18, 2026", "description": "Pharmacy - cold medicine",
-     "category": "Health", "amount": "₹23.10"},
-    {"date": "Aug 16, 2026", "description": "Movie tickets",
-     "category": "Entertainment", "amount": "₹15.00"},
-]
-
-# Rounded shares of total spending; may not sum to exactly 100.
-PROFILE_CATEGORIES = [
-    {"name": "Food", "total": "₹1,186.20", "percent": 38},
-    {"name": "Bills", "total": "₹742.00", "percent": 24},
-    {"name": "Transport", "total": "₹486.50", "percent": 16},
-    {"name": "Shopping", "total": "₹336.44", "percent": 11},
-    {"name": "Health", "total": "₹214.30", "percent": 7},
-    {"name": "Entertainment", "total": "₹180.00", "percent": 6},
-]
 
 
 # ------------------------------------------------------------------ #
@@ -171,19 +138,65 @@ def privacy():
 
 @app.route("/profile")
 def profile():
-    """Show the profile page with static demo data until Step 5."""
-    if not session.get("user_id"):
+    """Show the signed-in user's profile with live data from the database."""
+    user_id = session.get("user_id")
+    if not user_id:
         return redirect(url_for("login"))
 
-    parts = PROFILE_USER["name"].split()
-    user = {**PROFILE_USER, "initials": "".join(p[0] for p in parts[:2]).upper()}
+    user_info = get_user_by_id(user_id)
+    if user_info is None:
+        # Stale session pointing at a user row that no longer exists.
+        session.clear()
+        return redirect(url_for("login"))
+
+    stats_raw = get_summary_stats(user_id)
+    tx_rows = get_recent_transactions(user_id)
+    cat_rows = get_category_breakdown(user_id)
+
+    parts = user_info["name"].split()
+    initials = "".join(p[0] for p in parts[:2]).upper()
+
+    top_amount = cat_rows[0]["amount"] if cat_rows else 0
+
+    stats = [
+        {
+            "label": "Total spent",
+            "value": f"₹{stats_raw['total_spent']:,.2f}",
+            "note": f"across {len(cat_rows)} categories" if cat_rows else "no expenses yet",
+        },
+        {
+            "label": "Transactions",
+            "value": str(stats_raw["transaction_count"]),
+            "note": "all time",
+        },
+        {
+            "label": "Top category",
+            "value": stats_raw["top_category"],
+            "note": f"₹{top_amount:,.2f} spent" if cat_rows else "no expenses yet",
+        },
+    ]
+
+    transactions = [
+        {
+            "date": datetime.strptime(t["date"], "%Y-%m-%d").strftime("%b %d, %Y"),
+            "description": t["description"] if t["description"] is not None else "—",
+            "category": t["category"],
+            "amount": f"₹{t['amount']:,.2f}",
+        }
+        for t in tx_rows
+    ]
+
+    categories = [
+        {"name": c["name"], "total": f"₹{c['amount']:,.2f}", "percent": c["pct"]}
+        for c in cat_rows
+    ]
 
     return render_template(
         "profile.html",
-        user=user,
-        stats=PROFILE_STATS,
-        transactions=PROFILE_TRANSACTIONS,
-        categories=PROFILE_CATEGORIES,
+        user={**user_info, "initials": initials},
+        stats=stats,
+        transactions=transactions,
+        categories=categories,
     )
 
 

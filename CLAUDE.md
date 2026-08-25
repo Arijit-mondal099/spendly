@@ -7,29 +7,40 @@ Spendly is a lightweight personal expense tracker built with Flask and SQLite, d
 ```text
 claude-code-practice/
 ├── app.py                       # Flask application and route definitions
+├── conftest.py                  # Pytest fixtures: isolated temp DB + test client
 ├── requirements.txt             # Flask, Werkzeug, pytest, pytest-flask
 ├── expense_tracker.db           # SQLite database (runtime, gitignored)
 │
 ├── db/
 │   ├── __init__.py
-│   └── db.py                    # Database helpers: get_db(), init_db(), seed_db()
+│   ├── db.py                    # Connection/schema/seed + user helpers:
+│   │                            #   get_db(), close_db(), init_db(), seed_db(),
+│   │                            #   create_user(), get_user_by_email()
+│   └── queries.py               # Read-only profile queries:
+│                                #   get_user_by_id(), get_summary_stats(),
+│                                #   get_recent_transactions(), get_category_breakdown()
 │
 ├── templates/                   # Jinja2 templates; all extend base.html
 │   ├── base.html                # Shared layout: navbar, footer, and template blocks
-│   ├── landing.html              # /
-│   ├── register.html             # /register
-│   ├── login.html                # /login
-│   ├── terms.html                # /terms
-│   └── privacy.html              # /privacy
+│   ├── landing.html             # /
+│   ├── register.html            # /register
+│   ├── login.html               # /login
+│   ├── profile.html             # /profile (requires sign-in)
+│   ├── terms.html               # /terms
+│   └── privacy.html             # /privacy
 │
 ├── static/
 │   ├── css/
-│   │   └── style.css             # Global stylesheet and design tokens
+│   │   ├── style.css            # Global stylesheet and design tokens
+│   │   └── profile.css          # Profile page styles
 │   └── js/
-│       └── main.js               # Global JavaScript; page-specific JS stays in templates
+│       └── main.js              # Global JavaScript; page-specific JS stays in templates
+│
+├── tests/
+│   └── test_backend_connection.py  # Query helper unit tests + /profile flow tests
 │
 └── design/
-    └── hero-section-design.png   # UI design reference
+    └── hero-section-design.png  # UI design reference
 ```
 
 ## Where Things Belong
@@ -91,10 +102,12 @@ pytest -s
 | Route | Status |
 |---|---|
 | `GET /` | Implemented — renders `landing.html` |
-| `GET /register` | Implemented — renders `register.html` |
-| `GET /login` | Implemented — renders `login.html` |
-| `GET /logout` | Stub — Step 3 |
-| `GET /profile` | Stub — Step 4 |
+| `GET/POST /register` | Implemented — validates input, creates user, redirects to login |
+| `GET/POST /login` | Implemented — authenticates via session |
+| `GET /logout` | Implemented — clears session, redirects to login |
+| `GET /terms` | Implemented — renders `terms.html` |
+| `GET /privacy` | Implemented — renders `privacy.html` |
+| `GET /profile` | Implemented — renders `profile.html` with live DB data |
 | `GET /expenses/add` | Stub — Step 7 |
 | `GET /expenses/<id>/edit` | Stub — Step 8 |
 | `GET /expenses/<id>/delete` | Stub — Step 9 |
@@ -108,6 +121,7 @@ pytest -s
 - **Never put database logic in route functions** — it belongs in `db/db.py`.
 - **Never install new packages** mid-feature without flagging it — keep `requirements.txt` in sync.
 - **Never use JavaScript frameworks** — the frontend is intentionally vanilla.
-- **`db/db.py` is currently empty** — do not assume database helpers exist until the step that implements them.
+- **Tests must never `import app` at module level** — `conftest.py` repoints the DB at a temp file before app is imported; module-level imports would touch the dev database.
+- **Tests must never assert global row counts** — the shared seeded DB plus per-run fixtures mean only relational/ordering assertions are stable.
 - **SQLite foreign keys must be explicitly enabled** — `get_db()` must run `PRAGMA foreign_keys = ON` on every connection.
 - **The app runs on port `5001`**, not Flask's default `5000` — do not change this.
