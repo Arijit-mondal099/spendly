@@ -1,0 +1,255 @@
+/* ------------------------------------------------------------------ */
+/* Profile page                                                        */
+/* ------------------------------------------------------------------ */
+
+.profile-section {
+    padding: 3rem 2rem 5rem;
+}
+
+.profile-container {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Cards ------------------------------------------------------------- */
+
+.profile-card {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 2rem;
+}
+
+.profile-card-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+}
+
+/* User info card ----------------------------------------------------- */
+
+.profile-user-card {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.profile-avatar {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--paper);
+    font-size: 1.5rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-user-name {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.75rem;
+    letter-spacing: -0.02em;
+}
+
+.profile-user-email {
+    color: var(--ink-muted);
+    font-size: 0.95rem;
+}
+
+.profile-user-meta {
+    margin-top: 0.25rem;
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+}
+
+/* Summary stats row -------------------------------------------------- */
+
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.profile-stat {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.profile-stat-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-muted);
+}
+
+.profile-stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.profile-stat-note {
+    font-size: 0.85rem;
+    color: var(--ink-faint);
+}
+
+/* Transaction table --------------------------------------------------- */
+
+.profile-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.profile-table th {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-muted);
+}
+
+.profile-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.profile-table tbody tr:last-child td { border-bottom: none; }
+
+.profile-table tbody tr:hover { background: var(--paper-warm); }
+
+.profile-table .profile-amount-col { text-align: right; }
+
+.profile-table td.profile-amount {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Category badges.
+   Colours come from the --cat-* tokens in style.css; the modifiers
+   cover the seven seeded categories. Unknown categories keep the
+   neutral base styling. */
+
+.category-badge {
+    display: inline-block;
+    padding: 0.15rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    background: var(--paper-warm);
+    color: var(--ink-soft);
+}
+
+.category-badge-food { background: var(--cat-food-bg); color: var(--cat-food-text); }
+.category-badge-bills { background: var(--cat-bills-bg); color: var(--cat-bills-text); }
+.category-badge-transport { background: var(--cat-transport-bg); color: var(--cat-transport-text); }
+.category-badge-shopping { background: var(--cat-shopping-bg); color: var(--cat-shopping-text); }
+.category-badge-health { background: var(--cat-health-bg); color: var(--cat-health-text); }
+.category-badge-entertainment { background: var(--cat-entertainment-bg); color: var(--cat-entertainment-text); }
+.category-badge-other { background: var(--cat-other-bg); color: var(--cat-other-text); }
+
+/* Category breakdown bars --------------------------------------------- */
+
+.profile-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.profile-bar-row + .profile-bar-row { margin-top: 1rem; }
+
+.profile-bar-row .category-badge {
+    width: 118px;
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.profile-cat-total {
+    margin-left: auto;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+}
+
+.profile-bar {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 9px;
+    border: none;
+    border-radius: 4px;
+}
+
+/* Track = the category tint (element bg covers Firefox; the
+   ::-webkit-progress-bar rule covers Chromium/Safari), value = fill. */
+
+.profile-bar-food,
+.profile-bar-food::-webkit-progress-bar { background: var(--cat-food-bg); }
+.profile-bar-food::-webkit-progress-value,
+.profile-bar-food::-moz-progress-bar { background: var(--cat-food); border-radius: 4px; }
+
+.profile-bar-bills,
+.profile-bar-bills::-webkit-progress-bar { background: var(--cat-bills-bg); }
+.profile-bar-bills::-webkit-progress-value,
+.profile-bar-bills::-moz-progress-bar { background: var(--cat-bills); border-radius: 4px; }
+
+.profile-bar-transport,
+.profile-bar-transport::-webkit-progress-bar { background: var(--cat-transport-bg); }
+.profile-bar-transport::-webkit-progress-value,
+.profile-bar-transport::-moz-progress-bar { background: var(--cat-transport); border-radius: 4px; }
+
+.profile-bar-shopping,
+.profile-bar-shopping::-webkit-progress-bar { background: var(--cat-shopping-bg); }
+.profile-bar-shopping::-webkit-progress-value,
+.profile-bar-shopping::-moz-progress-bar { background: var(--cat-shopping); border-radius: 4px; }
+
+.profile-bar-health,
+.profile-bar-health::-webkit-progress-bar { background: var(--cat-health-bg); }
+.profile-bar-health::-webkit-progress-value,
+.profile-bar-health::-moz-progress-bar { background: var(--cat-health); border-radius: 4px; }
+
+.profile-bar-entertainment,
+.profile-bar-entertainment::-webkit-progress-bar { background: var(--cat-entertainment-bg); }
+.profile-bar-entertainment::-webkit-progress-value,
+.profile-bar-entertainment::-moz-progress-bar { background: var(--cat-entertainment); border-radius: 4px; }
+
+.profile-bar-other,
+.profile-bar-other::-webkit-progress-bar { background: var(--cat-other-bg); }
+.profile-bar-other::-webkit-progress-value,
+.profile-bar-other::-moz-progress-bar { background: var(--cat-other); border-radius: 4px; }
+
+/* Responsive ----------------------------------------------------------- */
+
+@media (max-width: 600px) {
+    .profile-section { padding: 2rem 1rem 3rem; }
+
+    .profile-stats { grid-template-columns: 1fr; }
+
+    .profile-card { padding: 1.5rem; }
+
+    /* Keep the table usable on narrow screens without a wrapper element */
+    .profile-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}

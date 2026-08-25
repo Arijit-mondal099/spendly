@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Profile — Spendly{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="profile-section">
+  <div class="profile-container">
+
+    <!-- 1. User info card -->
+    <div class="profile-card profile-user-card">
+      <div class="profile-avatar" aria-hidden="true">{{ user.initials }}</div>
+      <div>
+        <h1 class="profile-user-name">{{ user.name }}</h1>
+        <p class="profile-user-email">{{ user.email }}</p>
+        <p class="profile-user-meta">Member since {{ user.member_since }}</p>
+      </div>
+    </div>
+
+    <!-- 2. Summary stats row -->
+    <div class="profile-stats">
+      {% for stat in stats %}
+      <div class="profile-stat">
+        <span class="profile-stat-label">{{ stat.label }}</span>
+        <span class="profile-stat-value">{{ stat.value }}</span>
+        <span class="profile-stat-note">{{ stat.note }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 3. Transaction history -->
+    <div class="profile-card">
+      <h2 class="profile-card-title">Recent transactions</h2>
+      <table class="profile-table">
+        <thead><tr>
+          <th scope="col">Date</th><th scope="col">Description</th>
+          <th scope="col">Category</th><th scope="col" class="profile-amount-col">Amount</th>
+        </tr></thead>
+        <tbody>
+          {% for tx in transactions %}
+          <tr>
+            <td>{{ tx.date }}</td>
+            <td>{{ tx.description }}</td>
+            <td><span class="category-badge category-badge-{{ tx.category|lower }}">{{ tx.category }}</span></td>
+            <td class="profile-amount">{{ tx.amount }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4. Category breakdown -->
+    <div class="profile-card">
+      <h2 class="profile-card-title">Spending by category</h2>
+      {% for row in categories %}
+      <div class="profile-bar-row">
+        <span class="category-badge category-badge-{{ row.name|lower }}">{{ row.name }}</span>
+        <progress class="profile-bar profile-bar-{{ row.name|lower }}"
+                  value="{{ row.percent }}" max="100"
+                  aria-label="{{ row.name }}: {{ row.total }}"></progress>
+        <span class="profile-cat-total">{{ row.total }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</section>
+{% endblock %}
