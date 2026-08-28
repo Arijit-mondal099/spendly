@@ -237,6 +237,64 @@
 .profile-bar-other::-webkit-progress-value,
 .profile-bar-other::-moz-progress-bar { background: var(--cat-other); border-radius: 4px; }
 
+/* Date-range filter (Recent transactions) ---------------------------- */
+
+.profile-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.profile-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 150px;
+    flex: 1 1 150px;
+}
+
+.profile-filter-field label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.profile-filter-field .form-input { width: 100%; }
+
+.profile-filter-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Override the full-width .btn-submit default from style.css so the
+   Apply button sits inline with the date inputs. */
+.profile-filter-apply {
+    width: auto;
+    padding: 0.6rem 1.25rem;
+    margin-top: 0;
+}
+
+.profile-filter-clear { padding: 0.6rem 1.25rem; }
+
+.profile-filter-hint,
+.profile-filter-empty {
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+    margin-bottom: 0.75rem;
+}
+
+.profile-filter-empty {
+    color: var(--ink-faint);
+    font-style: italic;
+    padding: 1rem 0;
+    text-align: center;
+}
+
 /* Responsive ----------------------------------------------------------- */
 
 @media (max-width: 600px) {
@@ -252,4 +310,7 @@
         overflow-x: auto;
         white-space: nowrap;
     }
+
+    .profile-filter { flex-direction: column; align-items: stretch; }
+    .profile-filter-actions { justify-content: flex-end; }
 }

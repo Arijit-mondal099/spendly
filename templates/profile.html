@@ -31,25 +31,50 @@
       {% endfor %}
     </div>
 
-    <!-- 3. Transaction history -->
+    <!-- 3. Transaction history with date-range filter -->
     <div class="profile-card">
       <h2 class="profile-card-title">Recent transactions</h2>
-      <table class="profile-table">
-        <thead><tr>
-          <th scope="col">Date</th><th scope="col">Description</th>
-          <th scope="col">Category</th><th scope="col" class="profile-amount-col">Amount</th>
-        </tr></thead>
-        <tbody>
-          {% for tx in transactions %}
-          <tr>
-            <td>{{ tx.date }}</td>
-            <td>{{ tx.description }}</td>
-            <td><span class="category-badge category-badge-{{ tx.category|lower }}">{{ tx.category }}</span></td>
-            <td class="profile-amount">{{ tx.amount }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+
+      <form method="get" action="{{ url_for('profile') }}" class="profile-filter">
+        <div class="profile-filter-field">
+          <label for="filter-start">From</label>
+          <input id="filter-start" class="form-input" type="date" name="start"
+                 value="{{ filter_start }}" max="{{ filter_end or '' }}">
+        </div>
+        <div class="profile-filter-field">
+          <label for="filter-end">To</label>
+          <input id="filter-end" class="form-input" type="date" name="end"
+                 value="{{ filter_end }}" min="{{ filter_start or '' }}">
+        </div>
+        <div class="profile-filter-actions">
+          <button type="submit" class="btn-submit profile-filter-apply">Apply</button>
+          <a href="{{ url_for('profile') }}" class="btn-ghost profile-filter-clear">Clear</a>
+        </div>
+      </form>
+
+      {% if filter_active and transactions|length == 0 %}
+        <p class="profile-filter-empty">No transactions in this date range</p>
+      {% else %}
+        {% if filter_active %}
+          <p class="profile-filter-hint">Showing {{ filtered_count }} of {{ total_count }} transactions</p>
+        {% endif %}
+        <table class="profile-table">
+          <thead><tr>
+            <th scope="col">Date</th><th scope="col">Description</th>
+            <th scope="col">Category</th><th scope="col" class="profile-amount-col">Amount</th>
+          </tr></thead>
+          <tbody>
+            {% for tx in transactions %}
+            <tr>
+              <td>{{ tx.date }}</td>
+              <td>{{ tx.description }}</td>
+              <td><span class="category-badge category-badge-{{ tx.category|lower }}">{{ tx.category }}</span></td>
+              <td class="profile-amount">{{ tx.amount }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
     </div>
 
     <!-- 4. Category breakdown -->
