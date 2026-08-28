@@ -23,27 +23,42 @@ def get_user_by_id(user_id):
     }
 
 
-def get_summary_stats(user_id):
+def _date_clauses(user_id, start, end):
+    """Return (where_sql, params) for an optional inclusive date range."""
+    clauses, params = ["user_id = ?"], [user_id]
+    if start is not None:
+        clauses.append("date >= ?")
+        params.append(start)
+    if end is not None:
+        clauses.append("date <= ?")
+        params.append(end)
+    return " AND ".join(clauses), params
+
+
+def get_summary_stats(user_id, start=None, end=None):
     """Return {'total_spent', 'transaction_count', 'top_category'} for this
-    user. Zeros and an em-dash when the user has no expenses."""
+    user, optionally scoped to an inclusive date range. Zeros and an em-dash
+    when the (filtered) window has no expenses."""
     db = get_db()
+    where_sql, params = _date_clauses(user_id, start, end)
+
     totals = db.execute(
-        """
+        f"""
         SELECT COALESCE(SUM(amount), 0) AS total_spent,
                COUNT(*)                 AS transaction_count
-        FROM expenses WHERE user_id = ?
+        FROM expenses WHERE {where_sql}
         """,
-        (user_id,),
+        params,
     ).fetchone()
     top = db.execute(
-        """
+        f"""
         SELECT category, SUM(amount) AS total
-        FROM expenses WHERE user_id = ?
+        FROM expenses WHERE {where_sql}
         GROUP BY category
         ORDER BY total DESC, category ASC
         LIMIT 1
         """,
-        (user_id,),
+        params,
     ).fetchone()
     return {
         "total_spent": round(totals["total_spent"], 2),
@@ -52,17 +67,19 @@ def get_summary_stats(user_id):
     }
 
 
-def get_recent_transactions(user_id, limit=10):
+def get_recent_transactions(user_id, limit=10, start=None, end=None):
     """Return up to `limit` expenses for this user, newest first, as plain
-    dicts with raw values (ISO date string, float amount)."""
+    dicts with raw values (ISO date string, float amount). Optionally scoped
+    to an inclusive date range via `start` / `end` (ISO YYYY-MM-DD)."""
+    where_sql, params = _date_clauses(user_id, start, end)
     rows = get_db().execute(
-        """
+        f"""
         SELECT date, description, category, amount
-        FROM expenses WHERE user_id = ?
+        FROM expenses WHERE {where_sql}
         ORDER BY date DESC, id DESC
         LIMIT ?
         """,
-        (user_id, limit),
+        (*params, limit),
     ).fetchall()
     return [
         {
