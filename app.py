@@ -1,7 +1,7 @@
 import re
 import secrets
 import sqlite3
-from datetime import datetime
+from datetime import date, datetime
 
 from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -149,30 +149,62 @@ def profile():
         session.clear()
         return redirect(url_for("login"))
 
-    stats_raw = get_summary_stats(user_id)
-    tx_rows = get_recent_transactions(user_id)
-    cat_rows = get_category_breakdown(user_id)
+    # ---- Parse the optional date-range filter from the query string ----
+    def _parse_iso(raw):
+        try:
+            return date.fromisoformat(raw).isoformat() if raw else None
+        except ValueError:
+            return None
+
+    start_iso = _parse_iso(request.args.get("start", "").strip())
+    end_iso = _parse_iso(request.args.get("end", "").strip())
+    filter_active = (start_iso is not None) or (end_iso is not None)
+
+    # Unfiltered count is the "Y" in the "Showing X of Y" hint. Cheap aggregate.
+    total_count_for_user = get_summary_stats(user_id)["transaction_count"]
+
+    stats_raw = get_summary_stats(user_id, start=start_iso, end=end_iso)
+    tx_rows = get_recent_transactions(user_id, start=start_iso, end=end_iso)
+    cat_rows = get_category_breakdown(user_id)  # all-time, per spec
 
     parts = user_info["name"].split()
     initials = "".join(p[0] for p in parts[:2]).upper()
 
-    top_amount = cat_rows[0]["amount"] if cat_rows else 0
+    has_filtered_data = stats_raw["transaction_count"] > 0
+
+    if not filter_active:
+        spent_note = (
+            f"across {len(cat_rows)} categories" if cat_rows else "no expenses yet"
+        )
+        count_note = "all time"
+        top_amount = cat_rows[0]["amount"] if cat_rows else 0
+        top_note = (
+            f"₹{top_amount:,.2f} spent" if cat_rows else "no expenses yet"
+        )
+    elif has_filtered_data:
+        spent_note = "in this date range"
+        count_note = "in this date range"
+        top_note = "in this date range"
+    else:
+        spent_note = "no expenses in this date range"
+        count_note = "no transactions in this date range"
+        top_note = "no expenses in this date range"
 
     stats = [
         {
             "label": "Total spent",
             "value": f"₹{stats_raw['total_spent']:,.2f}",
-            "note": f"across {len(cat_rows)} categories" if cat_rows else "no expenses yet",
+            "note": spent_note,
         },
         {
             "label": "Transactions",
             "value": str(stats_raw["transaction_count"]),
-            "note": "all time",
+            "note": count_note,
         },
         {
             "label": "Top category",
             "value": stats_raw["top_category"],
-            "note": f"₹{top_amount:,.2f} spent" if cat_rows else "no expenses yet",
+            "note": top_note,
         },
     ]
 
@@ -197,6 +229,11 @@ def profile():
         stats=stats,
         transactions=transactions,
         categories=categories,
+        filter_start=start_iso or "",
+        filter_end=end_iso or "",
+        filter_active=filter_active,
+        filtered_count=stats_raw["transaction_count"],
+        total_count=total_count_for_user,
     )
 
 
