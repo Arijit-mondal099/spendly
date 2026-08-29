@@ -1,3 +1,4 @@
+import math
 import re
 import secrets
 import sqlite3
@@ -12,6 +13,7 @@ from db.db import (
     get_db,
     get_user_by_email,
     init_db,
+    insert_expense,
     seed_db,
 )
 from db.queries import (
@@ -47,6 +49,14 @@ MIN_PASSWORD_LENGTH = 8
 EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 DUPLICATE_EMAIL_ERROR = "This email is already registered. Try signing in instead."
 LOGIN_ERROR = "Invalid email or password."
+VALID_CATEGORIES = (
+    "Food", "Transport", "Bills", "Health",
+    "Entertainment", "Shopping", "Other",
+)
+MAX_DESCRIPTION_LENGTH = 200
+# Upper bound to reject `inf` / `nan` and absurdly large values that would
+# break aggregates (e.g. total_spent) and the formatted display.
+MAX_AMOUNT = 1_000_000_000
 
 
 # ------------------------------------------------------------------ #
@@ -241,9 +251,75 @@ def profile():
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
 
-@app.route("/expenses/add")
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    if request.method == "GET":
+        return render_template(
+            "add_expense.html",
+            today=date.today().isoformat(),
+            error=None,
+            amount="", category="", date="", description="",
+        )
+
+    amount_raw = request.form.get("amount", "").strip()
+    category = request.form.get("category", "").strip()
+    date_raw = request.form.get("date", "").strip()
+    description_raw = request.form.get("description", "")
+
+    error = None
+    amount = None
+    if not amount_raw:
+        error = "Amount is required."
+    else:
+        try:
+            amount = float(amount_raw)
+        except ValueError:
+            error = "Amount must be a number."
+        else:
+            if not math.isfinite(amount) or amount <= 0 or amount > MAX_AMOUNT:
+                error = "Amount must be a positive number."
+                amount = None
+
+    if error is None and category not in VALID_CATEGORIES:
+        error = "Please choose a valid category."
+
+    parsed_date = None
+    if error is None:
+        if not date_raw:
+            error = "Date is required."
+        else:
+            try:
+                parsed_date = datetime.strptime(date_raw, "%Y-%m-%d").date()
+            except ValueError:
+                error = "Please enter a valid date."
+
+    description = description_raw.strip() if description_raw else ""
+    if error is None and len(description) > MAX_DESCRIPTION_LENGTH:
+        error = f"Description must be {MAX_DESCRIPTION_LENGTH} characters or fewer."
+    if error is None and not description:
+        description = None
+
+    if error is not None:
+        return render_template(
+            "add_expense.html",
+            today=date.today().isoformat(),
+            error=error,
+            amount=amount_raw, category=category, date=date_raw,
+            description=description_raw,
+        )
+
+    insert_expense(
+        user_id=user_id,
+        amount=amount,
+        category=category,
+        date=parsed_date.isoformat(),
+        description=description,
+    )
+    return redirect(url_for("profile"))
 
 
 @app.route("/expenses/<int:id>/edit")
