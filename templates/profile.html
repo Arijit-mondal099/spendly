@@ -4,6 +4,7 @@
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/add_expense.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -33,7 +34,10 @@
 
     <!-- 3. Transaction history with date-range filter -->
     <div class="profile-card">
-      <h2 class="profile-card-title">Recent transactions</h2>
+      <div class="profile-card-header">
+        <h2 class="profile-card-title">Recent transactions</h2>
+        <a href="{{ url_for('add_expense') }}" class="btn-primary">Add Expense</a>
+      </div>
 
       <form method="get" action="{{ url_for('profile') }}" class="profile-filter">
         <div class="profile-filter-field">
