@@ -1,5 +1,5 @@
 """SQLite helpers for Spendly: get_db(), close_db(), init_db(), seed_db(),
-get_user_by_email(), create_user()."""
+get_user_by_email(), create_user(), insert_expense()."""
 
 import sqlite3
 from datetime import date, timedelta
@@ -118,6 +118,22 @@ def create_user(name, email, password_hash):
     cursor = db.execute(
         "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
         (name, email, password_hash),
+    )
+    db.commit()
+    return cursor.lastrowid
+
+
+def insert_expense(user_id, amount, category, date, description):
+    """Insert a new expense row and return the new row's id.
+
+    ``amount`` is a float, ``category`` and ``date`` are strings, and
+    ``description`` is either a string or None (which is stored as NULL).
+    """
+    db = get_db()
+    cursor = db.execute(
+        "INSERT INTO expenses (user_id, amount, category, date, description) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (user_id, amount, category, date, description),
     )
     db.commit()
     return cursor.lastrowid

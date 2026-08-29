@@ -1,0 +1,70 @@
+/* ------------------------------------------------------------------ */
+/* Add expense page                                                    */
+/* ------------------------------------------------------------------ */
+
+.add-expense-section {
+    padding: 3rem 2rem 5rem;
+}
+
+.add-expense-container {
+    max-width: var(--auth-width);
+    margin: 0 auto;
+}
+
+.form-hint {
+    font-weight: 400;
+    color: var(--ink-faint);
+    font-size: 0.8rem;
+}
+
+/* Cancel button sits inline with the submit on wide screens;
+   full-width and stacked on narrow screens. */
+
+.add-expense-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.add-expense-actions .btn-submit {
+    flex: 1;
+    margin-top: 0;
+}
+
+.add-expense-cancel {
+    flex: 0 0 auto;
+    padding: 0.7rem 1.25rem;
+}
+
+/* Profile-page header that pairs the section title with an action
+   button. Also defined here so the "Add Expense" button on
+   /profile works without touching profile.css. */
+
+.profile-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.profile-card-header .profile-card-title {
+    margin-bottom: 0;
+}
+
+.profile-card-header .btn-primary {
+    padding: 0.5rem 1.1rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+/* Responsive --------------------------------------------------------- */
+
+@media (max-width: 600px) {
+    .add-expense-section { padding: 2rem 1rem 3rem; }
+
+    .add-expense-actions { flex-direction: column-reverse; }
+    .add-expense-actions .btn-submit,
+    .add-expense-cancel { width: 100%; }
+}
