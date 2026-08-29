@@ -4,44 +4,7 @@ Spendly is a lightweight personal expense tracker built with Flask and SQLite, d
 
 ## Architecture
 
-```text
-claude-code-practice/
-├── app.py                       # Flask application and route definitions
-├── conftest.py                  # Pytest fixtures: isolated temp DB + test client
-├── requirements.txt             # Flask, Werkzeug, pytest, pytest-flask
-├── expense_tracker.db           # SQLite database (runtime, gitignored)
-│
-├── db/
-│   ├── __init__.py
-│   ├── db.py                    # Connection/schema/seed + user helpers:
-│   │                            #   get_db(), close_db(), init_db(), seed_db(),
-│   │                            #   create_user(), get_user_by_email()
-│   └── queries.py               # Read-only profile queries:
-│                                #   get_user_by_id(), get_summary_stats(),
-│                                #   get_recent_transactions(), get_category_breakdown()
-│
-├── templates/                   # Jinja2 templates; all extend base.html
-│   ├── base.html                # Shared layout: navbar, footer, and template blocks
-│   ├── landing.html             # /
-│   ├── register.html            # /register
-│   ├── login.html               # /login
-│   ├── profile.html             # /profile (requires sign-in)
-│   ├── terms.html               # /terms
-│   └── privacy.html             # /privacy
-│
-├── static/
-│   ├── css/
-│   │   ├── style.css            # Global stylesheet and design tokens
-│   │   └── profile.css          # Profile page styles
-│   └── js/
-│       └── main.js              # Global JavaScript; page-specific JS stays in templates
-│
-├── tests/
-│   └── test_backend_connection.py  # Query helper unit tests + /profile flow tests
-│
-└── design/
-    └── hero-section-design.png  # UI design reference
-```
+(See `ls` for the current tree; the repo has `app.py`, `db/`, `templates/`, `static/`, `tests/`, `design/`, `conftest.py`, `requirements.txt`.)
 
 ## Where Things Belong
 
@@ -64,7 +27,6 @@ claude-code-practice/
 - **SQLite only** — no PostgreSQL, no SQLAlchemy ORM, no external DB
 - **Vanilla JS only** — no React, no jQuery, no npm packages
 - **No new pip packages** — work within `requirements.txt` as-is unless explicitly told otherwise
-- **Python 3.14** — Python 3.14 is the target runtime
 
 ## Subagent Policy
 
