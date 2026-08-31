@@ -1,5 +1,5 @@
 """SQLite helpers for Spendly: get_db(), close_db(), init_db(), seed_db(),
-get_user_by_email(), create_user(), insert_expense()."""
+get_user_by_email(), create_user(), insert_expense(), update_expense()."""
 
 import sqlite3
 from datetime import date, timedelta
@@ -137,3 +137,20 @@ def insert_expense(user_id, amount, category, date, description):
     )
     db.commit()
     return cursor.lastrowid
+
+
+def update_expense(expense_id, user_id, amount, category, date, description):
+    """Update an existing expense row scoped to ``user_id`` and return the
+    number of rows affected (0 if the row does not exist for this user).
+
+    ``amount`` is a float, ``category`` and ``date`` are strings, and
+    ``description`` is either a string or None (which is stored as NULL).
+    """
+    db = get_db()
+    cursor = db.execute(
+        "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ? "
+        "WHERE id = ? AND user_id = ?",
+        (amount, category, date, description, expense_id, user_id),
+    )
+    db.commit()
+    return cursor.rowcount
