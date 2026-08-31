@@ -4,7 +4,7 @@ import secrets
 import sqlite3
 from datetime import date, datetime
 
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import Flask, abort, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from db.db import (
@@ -15,6 +15,7 @@ from db.db import (
     init_db,
     insert_expense,
     seed_db,
+    update_expense,
 )
 from db.queries import (
     get_category_breakdown,
@@ -220,6 +221,7 @@ def profile():
 
     transactions = [
         {
+            "id": t["id"],
             "date": datetime.strptime(t["date"], "%Y-%m-%d").strftime("%b %d, %Y"),
             "description": t["description"] if t["description"] is not None else "—",
             "category": t["category"],
@@ -322,9 +324,94 @@ def add_expense():
     return redirect(url_for("profile"))
 
 
-@app.route("/expenses/<int:id>/edit")
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
 def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    # Scope by both id and user_id so users can only edit their own expenses.
+    # Return 404 (not 403) for a non-existent or other-user row to avoid
+    # leaking the existence of someone else's expense.
+    row = get_db().execute(
+        "SELECT id, amount, category, date, description "
+        "FROM expenses WHERE id = ? AND user_id = ?",
+        (id, user_id),
+    ).fetchone()
+    if row is None:
+        abort(404)
+
+    if request.method == "GET":
+        return render_template(
+            "edit_expense.html",
+            expense=dict(row),
+            error=None,
+            amount=str(row["amount"]),
+            category=row["category"],
+            date=row["date"],
+            description=row["description"] or "",
+        )
+
+    # ---- POST: validate and update ----
+    amount_raw = request.form.get("amount", "").strip()
+    category = request.form.get("category", "").strip()
+    date_raw = request.form.get("date", "").strip()
+    description_raw = request.form.get("description", "")
+
+    error = None
+    amount = None
+    if not amount_raw:
+        error = "Amount is required."
+    else:
+        try:
+            amount = float(amount_raw)
+        except ValueError:
+            error = "Amount must be a number."
+        else:
+            if not math.isfinite(amount) or amount <= 0 or amount > MAX_AMOUNT:
+                error = "Amount must be a positive number."
+                amount = None
+
+    if error is None and category not in VALID_CATEGORIES:
+        error = "Please choose a valid category."
+
+    parsed_date = None
+    if error is None:
+        if not date_raw:
+            error = "Date is required."
+        else:
+            try:
+                parsed_date = datetime.strptime(date_raw, "%Y-%m-%d").date()
+            except ValueError:
+                error = "Please enter a valid date."
+
+    description = description_raw.strip() if description_raw else ""
+    if error is None and len(description) > MAX_DESCRIPTION_LENGTH:
+        error = f"Description must be {MAX_DESCRIPTION_LENGTH} characters or fewer."
+    if error is None and not description:
+        description = None
+
+    if error is not None:
+        return render_template(
+            "edit_expense.html",
+            expense=dict(row),
+            error=error,
+            amount=amount_raw, category=category, date=date_raw,
+            description=description_raw,
+        )
+
+    updated = update_expense(
+        expense_id=id,
+        user_id=user_id,
+        amount=amount,
+        category=category,
+        date=parsed_date.isoformat(),
+        description=description,
+    )
+    if updated == 0:
+        # Row was deleted or ownership changed between form render and submit.
+        abort(404)
+    return redirect(url_for("profile"))
 
 
 @app.route("/expenses/<int:id>/delete")

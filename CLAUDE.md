@@ -4,12 +4,33 @@ Spendly is a lightweight personal expense tracker built with Flask and SQLite, d
 
 ## Architecture
 
-(See `ls` for the current tree; the repo has `app.py`, `db/`, `templates/`, `static/`, `tests/`, `design/`, `conftest.py`, `requirements.txt`.)
+```
+app.py                      # all routes (no blueprints), port 5001
+db/
+  db.py                     # writes: get_db/close_db/init_db/seed_db + insert_expense/update_expense
+  queries.py                # reads: get_user_by_id/get_summary_stats/get_recent_transactions/get_category_breakdown
+templates/
+  *.html                    # Jinja2, all extend base.html (landing, login, register, profile, add_expense, edit_expense, terms, privacy)
+static/
+  css/*.css                 # style.css + page-specific files (profile.css, add_expense.css, edit_expense.css)
+  js/main.js
+tests/
+  test_*.py                 # pytest + pytest-flask, fixtures in conftest.py
+design/                     # reference images only
+conftest.py                 # temp-DB fixture (must import app inside fixtures, not at module level)
+requirements.txt            # Flask, Werkzeug, pytest, pytest-flask only
+.claude/
+  specs/01-08-*.md           # feature specs (Step 8 edit-expense is current)
+  commands/                 # slash commands (e.g. ship-feature)
+  agents/ skills/ hooks/ rules/ plans/
+```
+
+Generated/ignored at runtime: `venv/`, `__pycache__/`, `.pytest_cache/`, `expense_tracker.db`, `.env`.
 
 ## Where Things Belong
 
 - **New routes:** Add them to `app.py` only. Do not use blueprints.
-- **Database logic:** Keep all database operations in `db/db.py`. Never write database logic directly inside routes.
+- **Database logic:** Writes (`INSERT`/`UPDATE`/`CREATE`) in `db/db.py`; reads (`SELECT`) in `db/queries.py`. Never write database logic directly inside routes. Never put write helpers in `queries.py`.
 - **New pages:** Create a new `.html` template that extends `base.html`.
 - **Page-specific styles:** Create a dedicated `.css` file. Do not use inline `<style>` tags.
 
@@ -69,18 +90,18 @@ pytest -s
 | `GET /logout` | Implemented — clears session, redirects to login |
 | `GET /terms` | Implemented — renders `terms.html` |
 | `GET /privacy` | Implemented — renders `privacy.html` |
-| `GET /profile` | Implemented — renders `profile.html` with live DB data |
-| `GET /expenses/add` | Stub — Step 7 |
-| `GET /expenses/<id>/edit` | Stub — Step 8 |
+| `GET /profile` | Implemented — renders `profile.html` with live DB data + date-range filter (`?start=&end=`, Step 6) |
+| `GET/POST /expenses/add` | Implemented — Step 7: validates input, calls `insert_expense` in `db/db.py`, renders `add_expense.html` |
+| `GET/POST /expenses/<id>/edit` | Implemented on `feature/edit-expense` (Step 8: pre-filled form, validation, `update_expense` in `db/db.py`, `edit_expense.html`); stub on `main` until PR merged |
 | `GET /expenses/<id>/delete` | Stub — Step 9 |
 
-**Do not implement a stub route unless the active task explicitly targets that step.**
+**Do not implement a stub route unless the active task explicitly targets that step.** Status above reflects `feature/edit-expense` working tree; `origin/main` still has `edit` as a `GET`-only placeholder (`return "Edit expense — coming in Step 8"`, `app.py:327`).
 
 ## Warnings and Things to Avoid
 
 - **Never use raw string returns for stub routes** once a step is implemented — always render a template.
 - **Never hardcode URLs** in templates — always use `url_for()`.
-- **Never put database logic in route functions** — it belongs in `db/db.py`.
+- **Never put database logic in route functions** — it belongs in `db/db.py` (writes) / `db/queries.py` (reads).
 - **Never install new packages** mid-feature without flagging it — keep `requirements.txt` in sync.
 - **Never use JavaScript frameworks** — the frontend is intentionally vanilla.
 - **Tests must never `import app` at module level** — `conftest.py` repoints the DB at a temp file before app is imported; module-level imports would touch the dev database.

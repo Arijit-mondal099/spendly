@@ -74,7 +74,7 @@ def get_recent_transactions(user_id, limit=10, start=None, end=None):
     where_sql, params = _date_clauses(user_id, start, end)
     rows = get_db().execute(
         f"""
-        SELECT date, description, category, amount
+        SELECT id, date, description, category, amount
         FROM expenses WHERE {where_sql}
         ORDER BY date DESC, id DESC
         LIMIT ?
@@ -83,6 +83,7 @@ def get_recent_transactions(user_id, limit=10, start=None, end=None):
     ).fetchall()
     return [
         {
+            "id": row["id"],
             "date": row["date"],
             "description": row["description"],
             "category": row["category"],

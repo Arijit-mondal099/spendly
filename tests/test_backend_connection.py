@@ -73,7 +73,7 @@ def test_recent_transactions_newest_first(app_ctx, demo_user_id):
 
     assert len(transactions) == 8  # within the default limit of 10
     for tx in transactions:
-        assert set(tx.keys()) == {"date", "description", "category", "amount"}
+        assert set(tx.keys()) == {"id", "date", "description", "category", "amount"}
 
     dates = [date.fromisoformat(t["date"]) for t in transactions]
     assert all(a >= b for a, b in zip(dates, dates[1:]))

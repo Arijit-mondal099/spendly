@@ -1,0 +1,24 @@
+/* ------------------------------------------------------------------ */
+/* Edit expense page                                                   */
+/* ------------------------------------------------------------------ */
+
+/* The edit form reuses the add-expense layout classes from
+   add_expense.css. This file is intentionally minimal: it exists so
+   edit_expense.html can link a dedicated stylesheet (per project
+   rules) without falling back to inline <style> blocks. Add
+   edit-specific overrides here only if the shared styles are
+   insufficient. */
+
+/* The "Edit" link added to each row of the recent-transactions table
+   on /profile. Lives in edit_expense.css (not profile.css) to keep
+   this step's diff surgical. */
+
+.profile-actions {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.profile-edit-link {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+}
